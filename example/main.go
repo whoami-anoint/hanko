@@ -54,24 +54,6 @@ func main() {
 	e.File("/secured", "public/html/secured.html", middleware.SessionMiddleware())
 	e.File("/unauthorized", "public/html/unauthorized.html")
 
-	e.GET("/sheeit", func(c echo.Context) error {
-		resp, err := http.Get(fmt.Sprintf("http://hanko:8000/users/%s", c.Get("user")))
-		if err != nil {
-			panic(err)
-		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		log.Println(string(body))
-		var user User
-		err = json.Unmarshal(body, &user)
-		if err != nil {
-			panic(err)
-		}
-		return c.Render(http.StatusOK, "secured.html", map[string]interface{}{
-			"user": user.Email,
-		})
-	}, middleware.SessionMiddleware())
-
 	e.GET("/logout", func(c echo.Context) error {
 		cookie := &http.Cookie{
 			Name:     "hanko",
