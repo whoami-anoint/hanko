@@ -14,14 +14,15 @@ import (
 
 // Config is the central configuration type
 type Config struct {
-	Server   Server           `yaml:"server" json:"server" koanf:"server"`
-	Webauthn WebauthnSettings `yaml:"webauthn" json:"webauthn" koanf:"webauthn"`
-	Passcode Passcode         `yaml:"passcode" json:"passcode" koanf:"passcode"`
-	Password Password         `yaml:"password" json:"password" koanf:"password"`
-	Database Database         `yaml:"database" json:"database" koanf:"database"`
-	Secrets  Secrets          `yaml:"secrets" json:"secrets" koanf:"secrets"`
-	Service  Service          `yaml:"service" json:"service" koanf:"service"`
-	Session  Session          `yaml:"session" json:"session" koanf:"session"`
+	Server       Server           `yaml:"server" json:"server" koanf:"server"`
+	Webauthn     WebauthnSettings `yaml:"webauthn" json:"webauthn" koanf:"webauthn"`
+	Passcode     Passcode         `yaml:"passcode" json:"passcode" koanf:"passcode"`
+	Password     Password         `yaml:"password" json:"password" koanf:"password"`
+	Database     Database         `yaml:"database" json:"database" koanf:"database"`
+	Secrets      Secrets          `yaml:"secrets" json:"secrets" koanf:"secrets"`
+	Service      Service          `yaml:"service" json:"service" koanf:"service"`
+	Session      Session          `yaml:"session" json:"session" koanf:"session"`
+	Registration Registration     `yaml:"registration" json:"registration" koanf:"registration"`
 }
 
 func Load(cfgFile *string) (*Config, error) {
@@ -88,6 +89,11 @@ func DefaultConfig() *Config {
 				HttpOnly: true,
 				SameSite: "strict",
 				Secure:   true,
+			},
+		},
+		Registration: Registration{
+			EmailVerification: EmailVerification{
+				Enabled: true,
 			},
 		},
 	}
@@ -313,4 +319,12 @@ func (s *Session) Validate() error {
 		return errors.New("failed to parse lifespan")
 	}
 	return nil
+}
+
+type Registration struct {
+	EmailVerification EmailVerification `yaml:"email_verification" json:"email_verification" koanf:"email_verification"`
+}
+
+type EmailVerification struct {
+	Enabled bool
 }
