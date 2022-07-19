@@ -29,7 +29,9 @@ func SessionMiddleware() echo.MiddlewareFunc {
 				return c.Redirect(http.StatusTemporaryRedirect, "/unauthorized")
 			}
 
+			log.Printf("%+v", token)
 			log.Printf("session for user '%s' verified successfully", token.Subject())
+			c.Set("user", token.Subject())
 
 			return next(c)
 		}

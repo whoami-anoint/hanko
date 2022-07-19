@@ -1,15 +1,44 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	mw "github.com/labstack/echo/v4/middleware"
 	"github.com/teamhanko/hanko/example/middleware"
+	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+type User struct {
+	ID                  string    `json:"id"`
+	Email               string    `json:"email"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+	Verified            bool      `json:"verified"`
+	WebauthnCredentials []struct {
+		ID string `json:"id"`
+	} `json:"webauthn_credentials"`
+}
+
 func main() {
+	t := &Template{
+		templates: template.Must(template.ParseGlob("public/html/*.html")),
+	}
+
 	e := echo.New()
+	e.Renderer = t
 
 	e.Use(mw.LoggerWithConfig(mw.LoggerConfig{
 		Format: `{"time":"${time_rfc3339_nano}","time_unix":"${time_unix}","id":"${id}","remote_ip":"${remote_ip}",` +
@@ -20,9 +49,28 @@ func main() {
 
 	e.Use(middleware.CacheControlMiddleware())
 
+	e.Static("/static", "public/assets")
 	e.File("/", "public/html/index.html")
 	e.File("/secured", "public/html/secured.html", middleware.SessionMiddleware())
 	e.File("/unauthorized", "public/html/unauthorized.html")
+
+	e.GET("/sheeit", func(c echo.Context) error {
+		resp, err := http.Get(fmt.Sprintf("http://hanko:8000/users/%s", c.Get("user")))
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		log.Println(string(body))
+		var user User
+		err = json.Unmarshal(body, &user)
+		if err != nil {
+			panic(err)
+		}
+		return c.Render(http.StatusOK, "secured.html", map[string]interface{}{
+			"user": user.Email,
+		})
+	}, middleware.SessionMiddleware())
 
 	e.GET("/logout", func(c echo.Context) error {
 		cookie := &http.Cookie{
