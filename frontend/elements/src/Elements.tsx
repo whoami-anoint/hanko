@@ -3,6 +3,7 @@ import registerCustomElement from "@teamhanko/preact-custom-element";
 
 import AppProvider from "./contexts/AppProvider";
 import { Hanko } from "@teamhanko/hanko-frontend-sdk";
+import { defaultTranslations, Translations } from "./Translations";
 
 interface AdditionalProps {}
 
@@ -32,17 +33,28 @@ declare global {
 }
 
 export const HankoAuth = (props: HankoAuthElementProps) => (
-  <AppProvider componentName={"auth"} {...props} hanko={hanko} />
+  <AppProvider
+    componentName={"auth"}
+    {...props}
+    hanko={hanko}
+    translations={translations}
+  />
 );
 
 export const HankoProfile = (props: HankoProfileElementProps) => (
-  <AppProvider componentName={"profile"} {...props} hanko={hanko} />
+  <AppProvider
+    componentName={"profile"}
+    {...props}
+    hanko={hanko}
+    translations={translations}
+  />
 );
 
 export interface RegisterOptions {
   api: string;
   shadow?: boolean;
   injectStyles?: boolean;
+  translations: Partial<Translations>;
 }
 
 interface InternalRegisterOptions extends RegisterOptions {
@@ -52,6 +64,7 @@ interface InternalRegisterOptions extends RegisterOptions {
 }
 
 let hanko: Hanko;
+let translations: Translations;
 
 interface ElementsRegisterReturn {
   hanko: Hanko;
@@ -90,6 +103,7 @@ export const register = async (
   options: RegisterOptions
 ): Promise<ElementsRegisterReturn> => {
   createHankoClient(options.api);
+  createTranslations(options.translations);
 
   await Promise.all([
     _register({
@@ -114,4 +128,44 @@ export const createHankoClient = (api: string) => {
     hanko = new Hanko(api);
   }
   return hanko;
+};
+
+function deepMerge<T>(obj1: T, obj2: Partial<T>): T {
+  const mergedObject = {} as T;
+
+  for (const key in obj1) {
+    if (Object.prototype.hasOwnProperty.call(obj1, key)) {
+      const value1 = obj1[key];
+      const value2 = obj2[key];
+
+      if (
+        typeof value1 === "object" &&
+        value1 !== null &&
+        typeof value2 === "object" &&
+        value2 !== null
+      ) {
+        mergedObject[key] = deepMerge(value1, value2);
+      } else {
+        mergedObject[key] = value1;
+      }
+    }
+  }
+
+  for (const key in obj2) {
+    if (Object.prototype.hasOwnProperty.call(obj2, key)) {
+      const value1 = obj1[key];
+      const value2 = obj2[key];
+
+      if (typeof value1 === "undefined") {
+        mergedObject[key] = value2;
+      }
+    }
+  }
+
+  return mergedObject;
+}
+
+const createTranslations = (customTranslations: Partial<Translations>) => {
+  translations = deepMerge(customTranslations, defaultTranslations);
+  return translations;
 };
