@@ -1,6 +1,5 @@
 import { JSX, FunctionalComponent } from "preact";
 import registerCustomElement from "@teamhanko/preact-custom-element";
-
 import AppProvider from "./contexts/AppProvider";
 import { Hanko } from "@teamhanko/hanko-frontend-sdk";
 import { defaultTranslations, Translations } from "./Translations";
@@ -103,7 +102,7 @@ export const register = async (
   options: RegisterOptions
 ): Promise<ElementsRegisterReturn> => {
   createHankoClient(options.api);
-  createTranslations(options.translations);
+  console.log("here", createTranslations(options.translations));
 
   await Promise.all([
     _register({
@@ -166,6 +165,7 @@ function deepMerge<T>(obj1: T, obj2: Partial<T>): T {
 }
 
 const createTranslations = (customTranslations: Partial<Translations>) => {
-  translations = deepMerge(customTranslations, defaultTranslations);
-  return translations;
+  return (translations = customTranslations
+    ? deepMerge(customTranslations, defaultTranslations)
+    : defaultTranslations);
 };
